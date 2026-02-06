@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Минималистичное приложение для учета расходов и доходов">
+    <title>Учет расходов и доходов</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Финансы</h1>
+            <p class="subtitle">Учет расходов и доходов</p>
+            <button class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">
+                <span class="theme-icon">◐</span>
+            </button>
+        </header>
+
+        <div class="balance-section">
+            <div class="balance-card">
+                <p class="balance-label">Баланс</p>
+                <h2 class="balance-amount" id="balance">0 ₽</h2>
+            </div>
+
+            <div class="summary">
+                <div class="summary-item income-item">
+                    <p class="summary-label">Доходы</p>
+                    <p class="summary-amount" id="income">0 ₽</p>
+                </div>
+                <div class="summary-item expense-item">
+                    <p class="summary-label">Расходы</p>
+                    <p class="summary-amount" id="expense">0 ₽</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="transactions-section">
+            <h3>История операций</h3>
+            <ul class="transaction-list" id="transaction-list">
+                <!-- Транзакции будут добавлены через JavaScript -->
+            </ul>
+        </div>
+
+        <div class="add-section">
+            <h3>Добавить операцию</h3>
+            <form id="transaction-form">
+                <div class="form-group">
+                    <label for="description">Описание</label>
+                    <input type="text" id="description" placeholder="Например: Зарплата, Продукты, Кофе..." required>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">Сумма (₽)</label>
+                    <input type="number" id="amount" placeholder="Положительная для дохода, отрицательная для расхода"
+                        step="0.01" required>
+                </div>
+
+                <button type="submit" class="btn-add">Добавить</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
