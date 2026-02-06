@@ -1,8 +1,15 @@
 // ========================================
+// Telegram Web App Integration
+// ========================================
+const tg = window.Telegram?.WebApp;
+const isTelegramApp = !!tg?.initData;
+
+// ========================================
 // Состояние приложения
 // ========================================
-let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-let currentTheme = localStorage.getItem('theme') || 'light';
+let transactions = [];
+let currentTheme = 'light';
+let isDataLoaded = false;
 
 // ========================================
 // Элементы DOM
@@ -19,9 +26,70 @@ const themeToggle = document.getElementById('theme-toggle');
 // ========================================
 // Инициализация
 // ========================================
-function init() {
+async function init() {
+    // Инициализация Telegram Mini App
+    if (isTelegramApp) {
+        tg.ready();
+        tg.expand();
+
+        // Применяем цветовую схему Telegram
+        if (tg.colorScheme === 'dark') {
+            currentTheme = 'dark';
+        }
+
+        // Загружаем данные из Telegram Cloud Storage
+        await loadFromTelegramCloud();
+    } else {
+        // Локальная версия - используем localStorage
+        transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        currentTheme = localStorage.getItem('theme') || 'light';
+    }
+
     applyTheme(currentTheme);
     updateUI();
+    isDataLoaded = true;
+}
+
+// ========================================
+// Telegram Cloud Storage
+// ========================================
+function loadFromTelegramCloud() {
+    return new Promise((resolve) => {
+        if (!isTelegramApp || !tg.CloudStorage) {
+            resolve();
+            return;
+        }
+
+        tg.CloudStorage.getItems(['transactions', 'theme'], (error, result) => {
+            if (!error && result) {
+                if (result.transactions) {
+                    try {
+                        transactions = JSON.parse(result.transactions);
+                    } catch (e) {
+                        transactions = [];
+                    }
+                }
+                if (result.theme) {
+                    currentTheme = result.theme;
+                }
+            }
+            resolve();
+        });
+    });
+}
+
+function saveToTelegramCloud() {
+    if (!isTelegramApp || !tg.CloudStorage) {
+        return;
+    }
+
+    tg.CloudStorage.setItem('transactions', JSON.stringify(transactions), (error) => {
+        if (error) {
+            console.error('Ошибка сохранения в Telegram Cloud:', error);
+        }
+    });
+
+    tg.CloudStorage.setItem('theme', currentTheme);
 }
 
 // ========================================
@@ -34,7 +102,13 @@ function applyTheme(theme) {
         document.documentElement.removeAttribute('data-theme');
     }
     currentTheme = theme;
-    localStorage.setItem('theme', theme);
+
+    // Сохраняем в соответствующее хранилище
+    if (isTelegramApp) {
+        saveToTelegramCloud();
+    } else {
+        localStorage.setItem('theme', theme);
+    }
 }
 
 function toggleTheme() {
@@ -186,7 +260,11 @@ function addTransaction(e) {
     const amount = parseFloat(amountInput.value);
 
     if (description === '' || isNaN(amount) || amount === 0) {
-        alert('Пожалуйста, заполните все поля корректно');
+        if (isTelegramApp) {
+            tg.showAlert('Пожалуйста, заполните все поля корректно');
+        } else {
+            alert('Пожалуйста, заполните все поля корректно');
+        }
         return;
     }
 
@@ -198,13 +276,18 @@ function addTransaction(e) {
     };
 
     transactions.push(transaction);
-    saveToLocalStorage();
+    saveData();
     updateUI();
 
     // Очистка формы
     descriptionInput.value = '';
     amountInput.value = '';
     descriptionInput.focus();
+
+    // Haptic feedback в Telegram
+    if (isTelegramApp && tg.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred('success');
+    }
 }
 
 // ========================================
@@ -212,8 +295,13 @@ function addTransaction(e) {
 // ========================================
 function removeTransaction(id) {
     transactions = transactions.filter(t => t.id !== id);
-    saveToLocalStorage();
+    saveData();
     updateUI();
+
+    // Haptic feedback в Telegram
+    if (isTelegramApp && tg.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred('light');
+    }
 }
 
 // ========================================
@@ -236,10 +324,19 @@ function formatCurrency(amount) {
 }
 
 // ========================================
-// Сохранение в localStorage
+// Сохранение данных
 // ========================================
+function saveData() {
+    if (isTelegramApp) {
+        saveToTelegramCloud();
+    } else {
+        localStorage.setItem('transactions', JSON.stringify(transactions));
+    }
+}
+
+// Для обратной совместимости
 function saveToLocalStorage() {
-    localStorage.setItem('transactions', JSON.stringify(transactions));
+    saveData();
 }
 
 // ========================================
@@ -252,4 +349,3 @@ themeToggle.addEventListener('click', toggleTheme);
 // Запуск приложения
 // ========================================
 init();
-
