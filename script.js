@@ -10,6 +10,7 @@ const isTelegramApp = !!tg?.initData;
 let transactions = [];
 let currentTheme = 'light';
 let isDataLoaded = false;
+let onboardingComplete = false;
 
 // ========================================
 // Элементы DOM
@@ -21,12 +22,154 @@ const transactionListEl = document.getElementById('transaction-list');
 const form = document.getElementById('transaction-form');
 const descriptionInput = document.getElementById('description');
 const amountInput = document.getElementById('amount');
+const dateInput = document.getElementById('transaction-date');
 const themeToggle = document.getElementById('theme-toggle');
+
+// Элементы онбординга
+const splashScreen = document.getElementById('splash-screen');
+const greetingScreen = document.getElementById('greeting-screen');
+const mainApp = document.getElementById('main-app');
+
+// ========================================
+// Онбординг - Анимированные переходы
+// ========================================
+function startOnboarding() {
+    // Проверяем, показывали ли уже онбординг в этой сессии
+    if (sessionStorage.getItem('onboardingShown')) {
+        skipToApp();
+        return;
+    }
+
+    // Настраиваем данные пользователя (аватар и имя)
+    setupUserData();
+
+    // Показываем splash screen (уже виден по умолчанию)
+    // Через 1.5 секунды переходим к приветствию
+    setTimeout(() => {
+        transitionToGreeting();
+    }, 1500);
+}
+
+// ========================================
+// Получение данных пользователя из Telegram
+// ========================================
+function setupUserData() {
+    const avatarEl = document.getElementById('user-avatar');
+    const greetingTextEl = document.getElementById('greeting-text');
+
+    if (isTelegramApp && tg.initDataUnsafe?.user) {
+        const user = tg.initDataUnsafe.user;
+
+        // Устанавливаем имя пользователя
+        const firstName = user.first_name || 'Друг';
+        greetingTextEl.textContent = `Привет, ${firstName}`;
+
+        // Устанавливаем аватар пользователя из Telegram
+        if (user.photo_url) {
+            avatarEl.src = user.photo_url;
+            avatarEl.onerror = () => {
+                // Если аватар не загрузился - показываем инициалы
+                showAvatarPlaceholder(avatarEl, firstName);
+            };
+        } else {
+            // Нет фото - показываем инициалы
+            showAvatarPlaceholder(avatarEl, firstName);
+        }
+    } else {
+        // Не Telegram - показываем дефолтное приветствие
+        greetingTextEl.textContent = 'Добро пожаловать';
+        showAvatarPlaceholder(avatarEl, 'В');
+    }
+}
+
+// ========================================
+// Плейсхолдер аватара с инициалами
+// ========================================
+function showAvatarPlaceholder(avatarEl, name) {
+    const initial = name.charAt(0).toUpperCase();
+    const container = avatarEl.parentElement;
+
+    // Скрываем img, создаём плейсхолдер
+    avatarEl.style.display = 'none';
+
+    const placeholder = document.createElement('div');
+    placeholder.className = 'avatar-placeholder';
+    placeholder.textContent = initial;
+    placeholder.style.cssText = `
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-size: 3.5rem;
+        font-weight: 600;
+        border-radius: 50%;
+    `;
+    container.appendChild(placeholder);
+}
+
+
+function transitionToGreeting() {
+    // Анимация исчезновения splash
+    const splashContent = splashScreen.querySelector('.splash-content');
+    splashContent.classList.add('splash-exit');
+
+    setTimeout(() => {
+        // Скрываем splash, показываем greeting
+        splashScreen.classList.add('hidden');
+        greetingScreen.classList.remove('hidden');
+
+        // Через 2 секунды переходим к приложению
+        setTimeout(() => {
+            transitionToApp();
+        }, 2000);
+    }, 600);
+}
+
+function transitionToApp() {
+    // Анимация исчезновения greeting
+    const greetingContent = greetingScreen.querySelector('.greeting-content');
+    greetingContent.classList.add('greeting-exit');
+
+    setTimeout(() => {
+        // Скрываем greeting, показываем app
+        greetingScreen.classList.add('hidden');
+        mainApp.classList.remove('hidden');
+        mainApp.classList.add('app-enter');
+
+        // Отмечаем что онбординг показан
+        sessionStorage.setItem('onboardingShown', 'true');
+        onboardingComplete = true;
+
+        // Haptic feedback для Telegram
+        if (isTelegramApp && tg.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred('light');
+        }
+    }, 500);
+}
+
+function skipToApp() {
+    // Пропускаем онбординг - сразу показываем приложение
+    splashScreen.classList.add('hidden');
+    greetingScreen.classList.add('hidden');
+    mainApp.classList.remove('hidden');
+    mainApp.style.opacity = '1';
+    mainApp.style.transform = 'scale(1)';
+    onboardingComplete = true;
+}
+
 
 // ========================================
 // Инициализация
 // ========================================
 async function init() {
+    // Устанавливаем сегодняшнюю дату по умолчанию
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+    dateInput.max = today; // Нельзя выбрать будущую дату
+
     // Инициализация Telegram Mini App
     if (isTelegramApp) {
         tg.ready();
@@ -48,7 +191,11 @@ async function init() {
     applyTheme(currentTheme);
     updateUI();
     isDataLoaded = true;
+
+    // Запуск онбординга
+    startOnboarding();
 }
+
 
 // ========================================
 // Telegram Cloud Storage
@@ -167,27 +314,12 @@ function groupTransactionsByDate(transactions) {
 }
 
 // ========================================
-// Форматирование даты
+// Форматирование даты (всегда число и месяц)
 // ========================================
 function formatDate(dateString) {
     const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    // Сброс времени для корректного сравнения
-    today.setHours(0, 0, 0, 0);
-    yesterday.setHours(0, 0, 0, 0);
-    date.setHours(0, 0, 0, 0);
-
-    if (date.getTime() === today.getTime()) {
-        return 'Сегодня';
-    } else if (date.getTime() === yesterday.getTime()) {
-        return 'Вчера';
-    } else {
-        const options = { day: 'numeric', month: 'long', year: 'numeric' };
-        return date.toLocaleDateString('ru-RU', options);
-    }
+    const options = { day: 'numeric', month: 'long' };
+    return date.toLocaleDateString('ru-RU', options);
 }
 
 // ========================================
@@ -258,6 +390,7 @@ function addTransaction(e) {
 
     const description = descriptionInput.value.trim();
     const amount = parseFloat(amountInput.value);
+    const selectedDate = dateInput.value || new Date().toISOString().split('T')[0];
 
     if (description === '' || isNaN(amount) || amount === 0) {
         if (isTelegramApp) {
@@ -272,14 +405,14 @@ function addTransaction(e) {
         id: generateID(),
         description: description,
         amount: amount,
-        date: new Date().toISOString().split('T')[0] // Текущая дата в формате YYYY-MM-DD
+        date: selectedDate
     };
 
     transactions.push(transaction);
     saveData();
     updateUI();
 
-    // Очистка формы
+    // Очистка формы (кроме даты)
     descriptionInput.value = '';
     amountInput.value = '';
     descriptionInput.focus();
@@ -344,6 +477,86 @@ function saveToLocalStorage() {
 // ========================================
 form.addEventListener('submit', addTransaction);
 themeToggle.addEventListener('click', toggleTheme);
+
+// ========================================
+// Микроанимации - Ripple эффект
+// ========================================
+function createRipple(event) {
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+
+    const ripple = document.createElement('span');
+    ripple.classList.add('ripple');
+
+    const size = Math.max(rect.width, rect.height);
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (event.clientX - rect.left - size / 2) + 'px';
+    ripple.style.top = (event.clientY - rect.top - size / 2) + 'px';
+
+    button.appendChild(ripple);
+
+    ripple.addEventListener('animationend', () => {
+        ripple.remove();
+    });
+}
+
+// Добавляем ripple эффект к кнопкам
+document.querySelectorAll('.btn-add, .btn-delete, .theme-toggle').forEach(button => {
+    button.addEventListener('click', createRipple);
+});
+
+// ========================================
+// Анимация при скролле (IntersectionObserver)
+// ========================================
+function setupScrollAnimations() {
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate-in');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    // Наблюдаем за секциями
+    document.querySelectorAll('.balance-section, .transactions-section, .add-section').forEach(section => {
+        section.classList.add('scroll-animate');
+        observer.observe(section);
+    });
+}
+
+// Добавляем стили для scroll-анимации динамически
+const scrollAnimationStyles = document.createElement('style');
+scrollAnimationStyles.textContent = `
+    .scroll-animate {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), 
+                    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .scroll-animate.animate-in {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .balance-section.scroll-animate { transition-delay: 0s; }
+    .transactions-section.scroll-animate { transition-delay: 0.1s; }
+    .add-section.scroll-animate { transition-delay: 0.2s; }
+`;
+document.head.appendChild(scrollAnimationStyles);
+
+// Инициализация scroll анимаций после загрузки DOM
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupScrollAnimations);
+} else {
+    setupScrollAnimations();
+}
 
 // ========================================
 // Запуск приложения

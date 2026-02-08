@@ -3,67 +3,118 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Минималистичное приложение для учета расходов и доходов">
-    <title>Учет расходов и доходов</title>
+    <title>fin — доходы и расходы</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>Финансы</h1>
-            <p class="subtitle">Учет расходов и доходов</p>
-            <button class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">
-                <span class="theme-icon">◐</span>
-            </button>
-        </header>
+    <!-- ========================================
+         Онбординг - Экран 1: Логотип
+         ======================================== -->
+    <div class="onboarding-screen" id="splash-screen">
+        <div class="splash-content">
+            <h1 class="splash-logo">fin</h1>
+        </div>
+    </div>
 
-        <div class="balance-section">
-            <div class="balance-card">
-                <p class="balance-label">Баланс</p>
-                <h2 class="balance-amount" id="balance">0 ₽</h2>
+    <!-- ========================================
+         Онбординг - Экран 2: Приветствие
+         ======================================== -->
+    <div class="onboarding-screen hidden" id="greeting-screen">
+        <div class="greeting-content">
+            <div class="avatar-container">
+                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Аватар"
+                    class="avatar-image" id="user-avatar">
+            </div>
+            <h2 class="greeting-text" id="greeting-text">Привет</h2>
+        </div>
+    </div>
+
+
+    <!-- ========================================
+         Главное приложение
+         ======================================== -->
+    <div class="app-container hidden" id="main-app">
+        <div class="container">
+            <header>
+                <div class="header-left">
+                    <h1 class="logo">fin</h1>
+                    <p class="subtitle">доходы и расходы</p>
+                </div>
+                <button class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">
+                    <svg class="theme-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                    <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                </button>
+            </header>
+
+            <div class="balance-section">
+                <div class="balance-card">
+                    <p class="balance-label">Баланс</p>
+                    <h2 class="balance-amount" id="balance">0 ₽</h2>
+                </div>
+
+                <div class="summary">
+                    <div class="summary-item income-item">
+                        <p class="summary-label">Доходы</p>
+                        <p class="summary-amount" id="income">0 ₽</p>
+                    </div>
+                    <div class="summary-item expense-item">
+                        <p class="summary-label">Расходы</p>
+                        <p class="summary-amount" id="expense">0 ₽</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="summary">
-                <div class="summary-item income-item">
-                    <p class="summary-label">Доходы</p>
-                    <p class="summary-amount" id="income">0 ₽</p>
-                </div>
-                <div class="summary-item expense-item">
-                    <p class="summary-label">Расходы</p>
-                    <p class="summary-amount" id="expense">0 ₽</p>
-                </div>
+            <div class="transactions-section">
+                <h3>История операций</h3>
+                <ul class="transaction-list" id="transaction-list">
+                    <!-- Транзакции будут добавлены через JavaScript -->
+                </ul>
             </div>
-        </div>
 
-        <div class="transactions-section">
-            <h3>История операций</h3>
-            <ul class="transaction-list" id="transaction-list">
-                <!-- Транзакции будут добавлены через JavaScript -->
-            </ul>
-        </div>
+            <div class="add-section">
+                <h3>Добавить операцию</h3>
+                <form id="transaction-form">
+                    <div class="form-group">
+                        <label for="description">Описание</label>
+                        <input type="text" id="description" placeholder="Например: Зарплата, Продукты, Кофе..."
+                            required>
+                    </div>
 
-        <div class="add-section">
-            <h3>Добавить операцию</h3>
-            <form id="transaction-form">
-                <div class="form-group">
-                    <label for="description">Описание</label>
-                    <input type="text" id="description" placeholder="Например: Зарплата, Продукты, Кофе..." required>
-                </div>
+                    <div class="form-group">
+                        <label for="amount">Сумма (₽)</label>
+                        <input type="number" id="amount"
+                            placeholder="Положительная для дохода, отрицательная для расхода" step="0.01" required>
+                    </div>
 
-                <div class="form-group">
-                    <label for="amount">Сумма (₽)</label>
-                    <input type="number" id="amount" placeholder="Положительная для дохода, отрицательная для расхода"
-                        step="0.01" required>
-                </div>
+                    <div class="form-group">
+                        <label for="transaction-date">Дата</label>
+                        <input type="date" id="transaction-date">
+                    </div>
 
-                <button type="submit" class="btn-add">Добавить</button>
-            </form>
+                    <button type="submit" class="btn-add">Добавить</button>
+                </form>
+            </div>
         </div>
     </div>
 
