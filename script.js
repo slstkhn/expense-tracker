@@ -16,6 +16,7 @@ let currentCurrency = {
     symbol: '₽',
     locale: 'ru-RU'
 };
+let currencyLoaded = false;
 
 // ========================================
 // Элементы DOM
@@ -47,8 +48,8 @@ function startOnboarding() {
     }
 
     // Если валюта уже выбрана ранее — пропускаем онбординг
-    const savedCurrency = localStorage.getItem('currency');
-    if (savedCurrency) {
+    // currencyLoaded устанавливается в loadCurrency()
+    if (currencyLoaded) {
         sessionStorage.setItem('onboardingShown', 'true');
         skipToApp();
         return;
@@ -688,6 +689,7 @@ function loadCurrency() {
                 if (!error && result) {
                     try {
                         currentCurrency = JSON.parse(result);
+                        currencyLoaded = true;
                     } catch (e) {
                         // Используем дефолтную валюту
                     }
@@ -699,6 +701,7 @@ function loadCurrency() {
             if (saved) {
                 try {
                     currentCurrency = JSON.parse(saved);
+                    currencyLoaded = true;
                 } catch (e) {
                     // Используем дефолтную валюту
                 }
