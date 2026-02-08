@@ -226,6 +226,78 @@
 }
 
 /* ========================================
+   Экран выбора валюты
+   ======================================== */
+.currency-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    animation: greetingEnter 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.currency-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--color-text);
+    text-align: center;
+}
+
+.currency-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.currency-option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--color-card-bg);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.currency-option:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.currency-option:active {
+    transform: scale(0.98);
+}
+
+.currency-flag {
+    font-size: 2rem;
+}
+
+.currency-name {
+    flex: 1;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--color-text);
+    text-align: left;
+}
+
+.currency-symbol {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-muted);
+}
+
+.currency-content.currency-exit {
+    animation: greetingExit 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+
+/* ========================================
    Переменные и основные стили
    ======================================== */
 :root {
@@ -516,6 +588,23 @@ h3 {
     opacity: 0;
     transform: translateY(20px);
     animation: fadeSlideIn 0.5s ease forwards;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: var(--transition);
+}
+
+.date-header:hover {
+    background-color: var(--color-toggle-bg);
+}
+
+.date-header:active {
+    transform: scale(0.98);
+}
+
+.date-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .date-header .date-text {
@@ -525,6 +614,29 @@ h3 {
 .date-header .date-balance {
     font-size: 0.85rem;
     color: var(--color-muted);
+}
+
+.date-chevron {
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+    color: var(--color-muted);
+}
+
+.date-group.collapsed .date-chevron {
+    transform: rotate(-90deg);
+}
+
+.date-transactions {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    max-height: 2000px;
+    opacity: 1;
+}
+
+.date-group.collapsed .date-transactions {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
 }
 
 /* ========================================

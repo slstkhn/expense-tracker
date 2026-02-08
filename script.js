@@ -11,6 +11,11 @@ let transactions = [];
 let currentTheme = 'light';
 let isDataLoaded = false;
 let onboardingComplete = false;
+let currentCurrency = {
+    code: 'RUB',
+    symbol: '₽',
+    locale: 'ru-RU'
+};
 
 // ========================================
 // Элементы DOM
@@ -28,6 +33,7 @@ const themeToggle = document.getElementById('theme-toggle');
 // Элементы онбординга
 const splashScreen = document.getElementById('splash-screen');
 const greetingScreen = document.getElementById('greeting-screen');
+const currencyScreen = document.getElementById('currency-screen');
 const mainApp = document.getElementById('main-app');
 
 // ========================================
@@ -121,27 +127,78 @@ function transitionToGreeting() {
         splashScreen.classList.add('hidden');
         greetingScreen.classList.remove('hidden');
 
-        // Через 2 секунды переходим к приложению
+        // Через 2 секунды переходим к выбору валюты
         setTimeout(() => {
-            transitionToApp();
+            transitionToCurrency();
         }, 2000);
     }, 600);
 }
 
-function transitionToApp() {
+function transitionToCurrency() {
     // Анимация исчезновения greeting
     const greetingContent = greetingScreen.querySelector('.greeting-content');
     greetingContent.classList.add('greeting-exit');
 
     setTimeout(() => {
-        // Скрываем greeting, показываем app
+        // Скрываем greeting, показываем выбор валюты
         greetingScreen.classList.add('hidden');
+        currencyScreen.classList.remove('hidden');
+
+        // Инициализируем обработчики выбора валюты
+        initCurrencySelection();
+    }, 500);
+}
+
+function initCurrencySelection() {
+    const currencyOptions = document.querySelectorAll('.currency-option');
+    currencyOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            selectCurrency(option);
+        });
+    });
+}
+
+function selectCurrency(option) {
+    // Получаем данные валюты
+    currentCurrency = {
+        code: option.dataset.currency,
+        symbol: option.dataset.symbol,
+        locale: option.dataset.locale
+    };
+
+    // Сохраняем выбор
+    saveCurrency();
+
+    // Haptic feedback
+    if (isTelegramApp && tg.HapticFeedback) {
+        tg.HapticFeedback.selectionChanged();
+    }
+
+    // Переходим к приложению
+    transitionToApp();
+}
+
+function transitionToApp() {
+    // Анимация исчезновения текущего экрана
+    const currencyContent = currencyScreen.querySelector('.currency-content');
+    if (currencyContent) {
+        currencyContent.classList.add('currency-exit');
+    }
+
+    setTimeout(() => {
+        // Скрываем все экраны онбординга, показываем app
+        splashScreen.classList.add('hidden');
+        greetingScreen.classList.add('hidden');
+        currencyScreen.classList.add('hidden');
         mainApp.classList.remove('hidden');
         mainApp.classList.add('app-enter');
 
         // Отмечаем что онбординг показан
         sessionStorage.setItem('onboardingShown', 'true');
         onboardingComplete = true;
+
+        // Обновляем UI с выбранной валютой
+        updateUI();
 
         // Haptic feedback для Telegram
         if (isTelegramApp && tg.HapticFeedback) {
@@ -154,6 +211,7 @@ function skipToApp() {
     // Пропускаем онбординг - сразу показываем приложение
     splashScreen.classList.add('hidden');
     greetingScreen.classList.add('hidden');
+    currencyScreen.classList.add('hidden');
     mainApp.classList.remove('hidden');
     mainApp.style.opacity = '1';
     mainApp.style.transform = 'scale(1)';
@@ -187,6 +245,9 @@ async function init() {
         transactions = JSON.parse(localStorage.getItem('transactions')) || [];
         currentTheme = localStorage.getItem('theme') || 'light';
     }
+
+    // Загружаем сохраненную валюту
+    await loadCurrency();
 
     applyTheme(currentTheme);
     updateUI();
@@ -350,11 +411,27 @@ function updateTransactionList() {
         const dateHeader = document.createElement('div');
         dateHeader.classList.add('date-header');
         dateHeader.innerHTML = `
-            <span class="date-text">${formatDate(group.date)}</span>
+            <div class="date-header-left">
+                <span class="date-chevron">▼</span>
+                <span class="date-text">${formatDate(group.date)}</span>
+            </div>
             <span class="date-balance">${formatCurrency(dateBalance)}</span>
         `;
 
+        // Обработчик клика для сворачивания/разворачивания
+        dateHeader.addEventListener('click', () => {
+            dateGroup.classList.toggle('collapsed');
+            // Haptic feedback
+            if (isTelegramApp && tg.HapticFeedback) {
+                tg.HapticFeedback.selectionChanged();
+            }
+        });
+
         dateGroup.appendChild(dateHeader);
+
+        // Контейнер для транзакций (сворачиваемый)
+        const transactionsContainer = document.createElement('div');
+        transactionsContainer.classList.add('date-transactions');
 
         // Сортировка транзакций внутри дня (новые сверху)
         const sortedTransactions = [...group.transactions].sort((a, b) => b.id - a.id);
@@ -375,9 +452,10 @@ function updateTransactionList() {
                 </button>
             `;
 
-            dateGroup.appendChild(li);
+            transactionsContainer.appendChild(li);
         });
 
+        dateGroup.appendChild(transactionsContainer);
         transactionListEl.appendChild(dateGroup);
     });
 }
@@ -448,12 +526,59 @@ function generateID() {
 // Форматирование валюты
 // ========================================
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('ru-RU', {
+    // Для узбекского сума используем простое форматирование (Intl не поддерживает UZS хорошо)
+    if (currentCurrency.code === 'UZS') {
+        const formatted = new Intl.NumberFormat('ru-RU', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
+        return `${formatted} ${currentCurrency.symbol}`;
+    }
+
+    return new Intl.NumberFormat(currentCurrency.locale, {
         style: 'currency',
-        currency: 'RUB',
+        currency: currentCurrency.code,
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(amount);
+}
+
+// ========================================
+// Сохранение и загрузка валюты
+// ========================================
+function saveCurrency() {
+    if (isTelegramApp && tg.CloudStorage) {
+        tg.CloudStorage.setItem('currency', JSON.stringify(currentCurrency));
+    } else {
+        localStorage.setItem('currency', JSON.stringify(currentCurrency));
+    }
+}
+
+function loadCurrency() {
+    return new Promise((resolve) => {
+        if (isTelegramApp && tg.CloudStorage) {
+            tg.CloudStorage.getItem('currency', (error, result) => {
+                if (!error && result) {
+                    try {
+                        currentCurrency = JSON.parse(result);
+                    } catch (e) {
+                        // Используем дефолтную валюту
+                    }
+                }
+                resolve();
+            });
+        } else {
+            const saved = localStorage.getItem('currency');
+            if (saved) {
+                try {
+                    currentCurrency = JSON.parse(saved);
+                } catch (e) {
+                    // Используем дефолтную валюту
+                }
+            }
+            resolve();
+        }
+    });
 }
 
 // ========================================
