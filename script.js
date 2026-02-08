@@ -251,6 +251,7 @@ async function init() {
 
     applyTheme(currentTheme);
     updateUI();
+    updateCurrencySymbol();
     isDataLoaded = true;
 
     // Запуск онбординга
@@ -602,6 +603,91 @@ function saveToLocalStorage() {
 // ========================================
 form.addEventListener('submit', addTransaction);
 themeToggle.addEventListener('click', toggleTheme);
+
+// Модальное окно выбора валюты
+const currencyToggle = document.getElementById('currency-toggle');
+const currencyModal = document.getElementById('currency-modal');
+const modalClose = document.getElementById('modal-close');
+const currentCurrencySymbol = document.getElementById('current-currency-symbol');
+
+if (currencyToggle) {
+    currencyToggle.addEventListener('click', openCurrencyModal);
+}
+
+if (modalClose) {
+    modalClose.addEventListener('click', closeCurrencyModal);
+}
+
+if (currencyModal) {
+    currencyModal.addEventListener('click', (e) => {
+        if (e.target === currencyModal) {
+            closeCurrencyModal();
+        }
+    });
+
+    // Обработчики для кнопок валют в модальном окне
+    currencyModal.querySelectorAll('.modal-option').forEach(option => {
+        option.addEventListener('click', () => {
+            changeCurrencyFromModal(option);
+        });
+    });
+}
+
+function openCurrencyModal() {
+    if (currencyModal) {
+        currencyModal.classList.remove('hidden');
+        // Небольшая задержка для анимации
+        requestAnimationFrame(() => {
+            currencyModal.classList.add('visible');
+        });
+
+        // Haptic feedback
+        if (isTelegramApp && tg.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred('light');
+        }
+    }
+}
+
+function closeCurrencyModal() {
+    if (currencyModal) {
+        currencyModal.classList.remove('visible');
+        setTimeout(() => {
+            currencyModal.classList.add('hidden');
+        }, 300);
+    }
+}
+
+function changeCurrencyFromModal(option) {
+    // Получаем данные валюты
+    currentCurrency = {
+        code: option.dataset.currency,
+        symbol: option.dataset.symbol,
+        locale: option.dataset.locale
+    };
+
+    // Сохраняем выбор
+    saveCurrency();
+
+    // Обновляем символ в шапке
+    updateCurrencySymbol();
+
+    // Обновляем UI
+    updateUI();
+
+    // Haptic feedback
+    if (isTelegramApp && tg.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred('success');
+    }
+
+    // Закрываем модальное окно
+    closeCurrencyModal();
+}
+
+function updateCurrencySymbol() {
+    if (currentCurrencySymbol) {
+        currentCurrencySymbol.textContent = currentCurrency.symbol;
+    }
+}
 
 // ========================================
 // Микроанимации - Ripple эффект

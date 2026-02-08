@@ -405,6 +405,49 @@ header {
     color: var(--color-muted);
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ========================================
+   Кнопка смены валюты
+   ======================================== */
+.currency-toggle {
+    background-color: var(--color-toggle-bg);
+    border: none;
+    color: var(--color-text);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-bounce);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.currency-toggle:hover {
+    transform: scale(1.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.currency-toggle:active {
+    transform: scale(0.92);
+    transition: var(--transition-fast);
+}
+
+.current-currency-symbol {
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
 /* ========================================
    Кнопка смены темы (солнце/луна)
    ======================================== */
@@ -1079,6 +1122,95 @@ input[type="date"] {
         width: 20px;
         height: 20px;
     }
+}
+
+/* ========================================
+   Модальное окно выбора валюты
+   ======================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.modal-content {
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    width: 90%;
+    max-width: 340px;
+    transform: scale(0.8) rotate(-3deg);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+        opacity 0.3s ease;
+}
+
+.modal-overlay.visible .modal-content {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text);
+}
+
+.modal-currency-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: var(--spacing-md);
+}
+
+.modal-option {
+    padding: 14px 16px;
+}
+
+.modal-close {
+    width: 100%;
+    padding: var(--spacing-sm);
+    background: transparent;
+    border: 2px solid var(--color-border);
+    border-radius: var(--border-radius);
+    color: var(--color-muted);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.modal-close:hover {
+    background: var(--color-date-bg);
+    color: var(--color-text);
+}
+
+.modal-close:active {
+    transform: scale(0.98);
 }
 
 /* ========================================

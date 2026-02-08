@@ -79,24 +79,29 @@
                     <h1 class="logo">fin</h1>
                     <p class="subtitle">доходы и расходы</p>
                 </div>
-                <button class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">
-                    <svg class="theme-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5" />
-                        <line x1="12" y1="1" x2="12" y2="3" />
-                        <line x1="12" y1="21" x2="12" y2="23" />
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                        <line x1="1" y1="12" x2="3" y2="12" />
-                        <line x1="21" y1="12" x2="23" y2="12" />
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                    </svg>
-                    <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                    </svg>
-                </button>
+                <div class="header-right">
+                    <button class="currency-toggle" id="currency-toggle" aria-label="Сменить валюту">
+                        <span class="current-currency-symbol" id="current-currency-symbol">₽</span>
+                    </button>
+                    <button class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">
+                        <svg class="theme-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5" />
+                            <line x1="12" y1="1" x2="12" y2="3" />
+                            <line x1="12" y1="21" x2="12" y2="23" />
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                            <line x1="1" y1="12" x2="3" y2="12" />
+                            <line x1="21" y1="12" x2="23" y2="12" />
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                        </svg>
+                        <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                        </svg>
+                    </button>
+                </div>
             </header>
 
             <div class="balance-section">
@@ -147,6 +152,38 @@
                     <button type="submit" class="btn-add">Добавить</button>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         Модальное окно выбора валюты
+         ======================================== -->
+    <div class="modal-overlay hidden" id="currency-modal">
+        <div class="modal-content">
+            <h2 class="modal-title">Выберите валюту</h2>
+            <div class="modal-currency-options">
+                <button class="currency-option modal-option" data-currency="RUB" data-symbol="₽" data-locale="ru-RU">
+                    <span class="currency-flag">🇷🇺</span>
+                    <span class="currency-name">Россия</span>
+                    <span class="currency-symbol">₽</span>
+                </button>
+                <button class="currency-option modal-option" data-currency="UZS" data-symbol="сўм" data-locale="uz-UZ">
+                    <span class="currency-flag">🇺🇿</span>
+                    <span class="currency-name">Узбекистан</span>
+                    <span class="currency-symbol">сўм</span>
+                </button>
+                <button class="currency-option modal-option" data-currency="KZT" data-symbol="₸" data-locale="kk-KZ">
+                    <span class="currency-flag">🇰🇿</span>
+                    <span class="currency-name">Казахстан</span>
+                    <span class="currency-symbol">₸</span>
+                </button>
+                <button class="currency-option modal-option" data-currency="USD" data-symbol="$" data-locale="en-US">
+                    <span class="currency-flag">🇺🇸</span>
+                    <span class="currency-name">США</span>
+                    <span class="currency-symbol">$</span>
+                </button>
+            </div>
+            <button class="modal-close" id="modal-close">Отмена</button>
         </div>
     </div>
 
