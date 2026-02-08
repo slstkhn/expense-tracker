@@ -46,6 +46,14 @@ function startOnboarding() {
         return;
     }
 
+    // Если валюта уже выбрана ранее — пропускаем онбординг
+    const savedCurrency = localStorage.getItem('currency');
+    if (savedCurrency) {
+        sessionStorage.setItem('onboardingShown', 'true');
+        skipToApp();
+        return;
+    }
+
     // Настраиваем данные пользователя (аватар и имя)
     setupUserData();
 
@@ -331,6 +339,7 @@ function toggleTheme() {
 function updateUI() {
     updateBalance();
     updateTransactionList();
+    updateWeeklyAnalytics();
 }
 
 // ========================================
@@ -350,6 +359,97 @@ function updateBalance() {
     balanceEl.textContent = formatCurrency(total);
     incomeEl.textContent = formatCurrency(income);
     expenseEl.textContent = formatCurrency(Math.abs(expense));
+}
+
+// ========================================
+// Недельная аналитика
+// ========================================
+function updateWeeklyAnalytics() {
+    const analyticsSection = document.getElementById('analytics-section');
+    const analyticsBars = document.getElementById('analytics-bars');
+    const analyticsTip = document.getElementById('analytics-tip');
+    const analyticsPeriod = document.getElementById('analytics-period');
+
+    // Получаем транзакции за последние 7 дней
+    const today = new Date();
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const weekTransactions = transactions.filter(t => {
+        const tDate = new Date(t.date);
+        return tDate >= weekAgo && tDate <= today && t.amount < 0;
+    });
+
+    // Если нет расходов за неделю — скрываем секцию
+    if (weekTransactions.length === 0) {
+        analyticsSection.style.display = 'none';
+        return;
+    }
+
+    analyticsSection.style.display = 'block';
+
+    // Период
+    const formatShortDate = (d) => `${d.getDate()}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+    analyticsPeriod.textContent = `${formatShortDate(weekAgo)} — ${formatShortDate(today)}`;
+
+    // Группируем расходы по описанию (как категория)
+    const categories = {};
+    weekTransactions.forEach(t => {
+        const cat = t.description || 'Другое';
+        if (!categories[cat]) {
+            categories[cat] = 0;
+        }
+        categories[cat] += Math.abs(t.amount);
+    });
+
+    // Сортируем по сумме (убывание)
+    const sorted = Object.entries(categories).sort((a, b) => b[1] - a[1]);
+    const totalExpense = sorted.reduce((sum, [, amount]) => sum + amount, 0);
+
+    // Цвета для полосок
+    const barColors = ['#e74c3c', '#e67e22', '#f1c40f', '#3498db', '#9b59b6', '#1abc9c'];
+
+    // Рендерим полоски (максимум 5)
+    analyticsBars.innerHTML = '';
+    sorted.slice(0, 5).forEach(([category, amount], index) => {
+        const percent = Math.round((amount / totalExpense) * 100);
+        const color = barColors[index % barColors.length];
+
+        const barItem = document.createElement('div');
+        barItem.classList.add('analytics-bar-item');
+        barItem.innerHTML = `
+            <div class="analytics-bar-header">
+                <span class="analytics-bar-category">${category}</span>
+                <span class="analytics-bar-amount">${formatCurrency(amount)}</span>
+            </div>
+            <div class="analytics-bar-track">
+                <div class="analytics-bar-fill" style="background-color: ${color};" data-width="${percent}%"></div>
+            </div>
+            <span class="analytics-bar-percent">${percent}% от расходов</span>
+        `;
+        analyticsBars.appendChild(barItem);
+    });
+
+    // Анимация полосок
+    requestAnimationFrame(() => {
+        document.querySelectorAll('.analytics-bar-fill').forEach(fill => {
+            fill.style.width = fill.dataset.width;
+        });
+    });
+
+    // Рекомендация
+    const topCategory = sorted[0];
+    const topPercent = Math.round((topCategory[1] / totalExpense) * 100);
+
+    let tip = '';
+    if (topPercent >= 50) {
+        tip = `<span class="analytics-tip-icon">⚠️</span> <strong>${topCategory[0]}</strong> — это ${topPercent}% всех расходов за неделю (${formatCurrency(topCategory[1])}). Стоит обратить внимание!`;
+    } else if (topPercent >= 30) {
+        tip = `<span class="analytics-tip-icon">💡</span> Больше всего потрачено на <strong>${topCategory[0]}</strong> — ${topPercent}% расходов. Всего за неделю: ${formatCurrency(totalExpense)}`;
+    } else {
+        tip = `<span class="analytics-tip-icon">✅</span> Расходы распределены равномерно. Общая сумма за неделю: ${formatCurrency(totalExpense)}`;
+    }
+    analyticsTip.innerHTML = tip;
 }
 
 // ========================================
