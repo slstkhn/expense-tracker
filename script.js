@@ -404,9 +404,17 @@ function updateTransactionList() {
 
     const groupedTransactions = groupTransactionsByDate(transactions);
 
+    // Загружаем сохранённые свёрнутые даты
+    const collapsedDates = JSON.parse(localStorage.getItem('collapsedDates') || '[]');
+
     groupedTransactions.forEach(group => {
         const dateGroup = document.createElement('div');
         dateGroup.classList.add('date-group');
+
+        // Восстанавливаем свёрнутое состояние
+        if (collapsedDates.includes(group.date)) {
+            dateGroup.classList.add('collapsed');
+        }
 
         const dateBalance = calculateDateBalance(group.transactions);
         const dateHeader = document.createElement('div');
@@ -422,6 +430,8 @@ function updateTransactionList() {
         // Обработчик клика для сворачивания/разворачивания
         dateHeader.addEventListener('click', () => {
             dateGroup.classList.toggle('collapsed');
+            // Сохраняем состояние
+            saveCollapsedDates();
             // Haptic feedback
             if (isTelegramApp && tg.HapticFeedback) {
                 tg.HapticFeedback.selectionChanged();
@@ -459,6 +469,22 @@ function updateTransactionList() {
         dateGroup.appendChild(transactionsContainer);
         transactionListEl.appendChild(dateGroup);
     });
+}
+
+// Сохранение свёрнутых дат
+function saveCollapsedDates() {
+    const collapsed = [];
+    document.querySelectorAll('.date-group.collapsed').forEach(group => {
+        const dateText = group.querySelector('.date-text')?.textContent;
+        // Находим дату по тексту из groupedTransactions
+        const allGroups = groupTransactionsByDate(transactions);
+        allGroups.forEach(g => {
+            if (formatDate(g.date) === dateText) {
+                collapsed.push(g.date);
+            }
+        });
+    });
+    localStorage.setItem('collapsedDates', JSON.stringify(collapsed));
 }
 
 // ========================================
