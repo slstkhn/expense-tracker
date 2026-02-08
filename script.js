@@ -47,14 +47,6 @@ function startOnboarding() {
         return;
     }
 
-    // Если валюта уже выбрана ранее — пропускаем онбординг
-    // currencyLoaded устанавливается в loadCurrency()
-    if (currencyLoaded) {
-        sessionStorage.setItem('onboardingShown', 'true');
-        skipToApp();
-        return;
-    }
-
     // Настраиваем данные пользователя (аватар и имя)
     setupUserData();
 
@@ -136,9 +128,20 @@ function transitionToGreeting() {
         splashScreen.classList.add('hidden');
         greetingScreen.classList.remove('hidden');
 
-        // Через 2 секунды переходим к выбору валюты
+        // Через 2 секунды — переход дальше
         setTimeout(() => {
-            transitionToCurrency();
+            if (currencyLoaded) {
+                // Валюта уже выбрана — пропускаем выбор, идём в приложение
+                const greetingContent = greetingScreen.querySelector('.greeting-content');
+                greetingContent.classList.add('greeting-exit');
+                setTimeout(() => {
+                    greetingScreen.classList.add('hidden');
+                    showMainApp();
+                }, 500);
+            } else {
+                // Первый запуск — показываем выбор валюты
+                transitionToCurrency();
+            }
         }, 2000);
     }, 600);
 }
@@ -214,6 +217,17 @@ function transitionToApp() {
             tg.HapticFeedback.impactOccurred('light');
         }
     }, 500);
+}
+
+// Переход к приложению после greeting (если валюта уже выбрана)
+function showMainApp() {
+    currencyScreen.classList.add('hidden');
+    mainApp.classList.remove('hidden');
+    mainApp.classList.add('app-enter');
+    sessionStorage.setItem('onboardingShown', 'true');
+    onboardingComplete = true;
+    updateUI();
+    updateCurrencySymbol();
 }
 
 function skipToApp() {
