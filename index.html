@@ -14,18 +14,12 @@
 </head>
 
 <body>
-    <!-- ========================================
-         Онбординг - Экран 1: Логотип
-         ======================================== -->
     <div class="onboarding-screen" id="splash-screen">
         <div class="splash-content">
             <h1 class="splash-logo">fin</h1>
         </div>
     </div>
 
-    <!-- ========================================
-         Онбординг - Экран 2: Приветствие
-         ======================================== -->
     <div class="onboarding-screen hidden" id="greeting-screen">
         <div class="greeting-content">
             <div class="avatar-container">
@@ -36,9 +30,6 @@
         </div>
     </div>
 
-    <!-- ========================================
-         Онбординг - Экран 3: Выбор валюты
-         ======================================== -->
     <div class="onboarding-screen hidden" id="currency-screen">
         <div class="currency-content">
             <h2 class="currency-title">Выберите валюту</h2>
@@ -69,9 +60,6 @@
 
 
 
-    <!-- ========================================
-         Главное приложение
-         ======================================== -->
     <div class="app-container hidden" id="main-app">
         <div class="container">
             <header>
@@ -136,25 +124,27 @@
                 </div>
             </div>
 
-            <!-- Недельная аналитика -->
             <div class="analytics-section" id="analytics-section" style="display: none;">
-                <h3>📊 Аналитика за неделю</h3>
+                <div class="analytics-header">
+                    <h3>📊 Аналитика за неделю</h3>
+                    <div class="analytics-toggle">
+                        <button class="analytics-btn active" id="btn-expense">Расходы</button>
+                        <button class="analytics-btn" id="btn-income">Доходы</button>
+                    </div>
+                </div>
                 <div class="analytics-card">
                     <div class="analytics-period" id="analytics-period"></div>
                     <div class="analytics-bars" id="analytics-bars">
-                        <!-- Полоски категорий добавляются через JS -->
-                    </div>
+                        </div>
                     <div class="analytics-tip" id="analytics-tip">
-                        <!-- Рекомендация -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
             <div class="transactions-section">
                 <h3>История операций</h3>
                 <ul class="transaction-list" id="transaction-list">
-                    <!-- Транзакции будут добавлены через JavaScript -->
-                </ul>
+                    </ul>
             </div>
 
             <div class="add-section">
@@ -183,9 +173,6 @@
         </div>
     </div>
 
-    <!-- ========================================
-         Модальное окно выбора валюты
-         ======================================== -->
     <div class="modal-overlay hidden" id="currency-modal">
         <div class="modal-content">
             <h2 class="modal-title">Выберите валюту</h2>
@@ -214,7 +201,8 @@
             <button class="modal-close" id="modal-close">Отмена</button>
         </div>
     </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
 </body>
 
