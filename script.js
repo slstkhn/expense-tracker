@@ -17,6 +17,7 @@ let currentCurrency = {
     locale: 'ru-RU'
 };
 let currencyLoaded = false;
+let weeklyChart = null; // Переменная для хранения графика Chart.js
 
 // ========================================
 // Элементы DOM
@@ -41,62 +42,45 @@ const mainApp = document.getElementById('main-app');
 // Онбординг - Анимированные переходы
 // ========================================
 function startOnboarding() {
-    // Проверяем, показывали ли уже онбординг в этой сессии
     if (sessionStorage.getItem('onboardingShown')) {
         skipToApp();
         return;
     }
 
-    // Настраиваем данные пользователя (аватар и имя)
     setupUserData();
 
-    // Показываем splash screen (уже виден по умолчанию)
-    // Через 1.5 секунды переходим к приветствию
     setTimeout(() => {
         transitionToGreeting();
     }, 1500);
 }
 
-// ========================================
-// Получение данных пользователя из Telegram
-// ========================================
 function setupUserData() {
     const avatarEl = document.getElementById('user-avatar');
     const greetingTextEl = document.getElementById('greeting-text');
 
     if (isTelegramApp && tg.initDataUnsafe?.user) {
         const user = tg.initDataUnsafe.user;
-
-        // Устанавливаем имя пользователя
         const firstName = user.first_name || 'Друг';
         greetingTextEl.textContent = `Привет, ${firstName}`;
 
-        // Устанавливаем аватар пользователя из Telegram
         if (user.photo_url) {
             avatarEl.src = user.photo_url;
             avatarEl.onerror = () => {
-                // Если аватар не загрузился - показываем инициалы
                 showAvatarPlaceholder(avatarEl, firstName);
             };
         } else {
-            // Нет фото - показываем инициалы
             showAvatarPlaceholder(avatarEl, firstName);
         }
     } else {
-        // Не Telegram - показываем дефолтное приветствие
         greetingTextEl.textContent = 'Добро пожаловать';
         showAvatarPlaceholder(avatarEl, 'В');
     }
 }
 
-// ========================================
-// Плейсхолдер аватара с инициалами
-// ========================================
 function showAvatarPlaceholder(avatarEl, name) {
     const initial = name.charAt(0).toUpperCase();
     const container = avatarEl.parentElement;
 
-    // Скрываем img, создаём плейсхолдер
     avatarEl.style.display = 'none';
 
     const placeholder = document.createElement('div');
@@ -117,21 +101,16 @@ function showAvatarPlaceholder(avatarEl, name) {
     container.appendChild(placeholder);
 }
 
-
 function transitionToGreeting() {
-    // Анимация исчезновения splash
     const splashContent = splashScreen.querySelector('.splash-content');
     splashContent.classList.add('splash-exit');
 
     setTimeout(() => {
-        // Скрываем splash, показываем greeting
         splashScreen.classList.add('hidden');
         greetingScreen.classList.remove('hidden');
 
-        // Через 2 секунды — переход дальше
         setTimeout(() => {
             if (currencyLoaded) {
-                // Валюта уже выбрана — пропускаем выбор, идём в приложение
                 const greetingContent = greetingScreen.querySelector('.greeting-content');
                 greetingContent.classList.add('greeting-exit');
                 setTimeout(() => {
@@ -139,7 +118,6 @@ function transitionToGreeting() {
                     showMainApp();
                 }, 500);
             } else {
-                // Первый запуск — показываем выбор валюты
                 transitionToCurrency();
             }
         }, 2000);
@@ -147,16 +125,12 @@ function transitionToGreeting() {
 }
 
 function transitionToCurrency() {
-    // Анимация исчезновения greeting
     const greetingContent = greetingScreen.querySelector('.greeting-content');
     greetingContent.classList.add('greeting-exit');
 
     setTimeout(() => {
-        // Скрываем greeting, показываем выбор валюты
         greetingScreen.classList.add('hidden');
         currencyScreen.classList.remove('hidden');
-
-        // Инициализируем обработчики выбора валюты
         initCurrencySelection();
     }, 500);
 }
@@ -171,55 +145,45 @@ function initCurrencySelection() {
 }
 
 function selectCurrency(option) {
-    // Получаем данные валюты
     currentCurrency = {
         code: option.dataset.currency,
         symbol: option.dataset.symbol,
         locale: option.dataset.locale
     };
 
-    // Сохраняем выбор
     saveCurrency();
 
-    // Haptic feedback
     if (isTelegramApp && tg.HapticFeedback) {
         tg.HapticFeedback.selectionChanged();
     }
 
-    // Переходим к приложению
     transitionToApp();
 }
 
 function transitionToApp() {
-    // Анимация исчезновения текущего экрана
     const currencyContent = currencyScreen.querySelector('.currency-content');
     if (currencyContent) {
         currencyContent.classList.add('currency-exit');
     }
 
     setTimeout(() => {
-        // Скрываем все экраны онбординга, показываем app
         splashScreen.classList.add('hidden');
         greetingScreen.classList.add('hidden');
         currencyScreen.classList.add('hidden');
         mainApp.classList.remove('hidden');
         mainApp.classList.add('app-enter');
 
-        // Отмечаем что онбординг показан
         sessionStorage.setItem('onboardingShown', 'true');
         onboardingComplete = true;
 
-        // Обновляем UI с выбранной валютой
         updateUI();
 
-        // Haptic feedback для Telegram
         if (isTelegramApp && tg.HapticFeedback) {
             tg.HapticFeedback.impactOccurred('light');
         }
     }, 500);
 }
 
-// Переход к приложению после greeting (если валюта уже выбрана)
 function showMainApp() {
     currencyScreen.classList.add('hidden');
     mainApp.classList.remove('hidden');
@@ -231,7 +195,6 @@ function showMainApp() {
 }
 
 function skipToApp() {
-    // Пропускаем онбординг - сразу показываем приложение
     splashScreen.classList.add('hidden');
     greetingScreen.classList.add('hidden');
     currencyScreen.classList.add('hidden');
@@ -241,35 +204,36 @@ function skipToApp() {
     onboardingComplete = true;
 }
 
-
 // ========================================
-// Инициализация
+// Инициализация (ИСПРАВЛЕНО)
 // ========================================
 async function init() {
-    // Устанавливаем сегодняшнюю дату по умолчанию
     const today = new Date().toISOString().split('T')[0];
     dateInput.value = today;
-    dateInput.max = today; // Нельзя выбрать будущую дату
+    dateInput.max = today;
 
-    // Инициализация Telegram Mini App
     if (isTelegramApp) {
         tg.ready();
         tg.expand();
 
-        // Применяем цветовую схему Telegram
         if (tg.colorScheme === 'dark') {
             currentTheme = 'dark';
         }
 
-        // Загружаем данные из Telegram Cloud Storage
-        await loadFromTelegramCloud();
-    } else {
-        // Локальная версия - используем localStorage
-        transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-        currentTheme = localStorage.getItem('theme') || 'light';
+        // Загружаем только настройки из Telegram Cloud
+        await loadSettingsFromTelegramCloud();
+    } 
+
+    // ВАЖНО: Транзакции всегда грузим из localStorage, чтобы избежать лимита в 4КБ
+    const savedTransactions = localStorage.getItem('transactions');
+    if (savedTransactions) {
+        try {
+            transactions = JSON.parse(savedTransactions);
+        } catch (e) {
+            transactions = [];
+        }
     }
 
-    // Загружаем сохраненную валюту
     await loadCurrency();
 
     applyTheme(currentTheme);
@@ -277,51 +241,45 @@ async function init() {
     updateCurrencySymbol();
     isDataLoaded = true;
 
-    // Запуск онбординга
     startOnboarding();
 }
 
-
 // ========================================
-// Telegram Cloud Storage
+// Загрузка настроек
 // ========================================
-function loadFromTelegramCloud() {
+function loadSettingsFromTelegramCloud() {
     return new Promise((resolve) => {
         if (!isTelegramApp || !tg.CloudStorage) {
+            currentTheme = localStorage.getItem('theme') || 'light';
             resolve();
             return;
         }
 
-        tg.CloudStorage.getItems(['transactions', 'theme'], (error, result) => {
+        tg.CloudStorage.getItem('theme', (error, result) => {
             if (!error && result) {
-                if (result.transactions) {
-                    try {
-                        transactions = JSON.parse(result.transactions);
-                    } catch (e) {
-                        transactions = [];
-                    }
-                }
-                if (result.theme) {
-                    currentTheme = result.theme;
-                }
+                currentTheme = result;
+            } else {
+                currentTheme = localStorage.getItem('theme') || 'light';
             }
             resolve();
         });
     });
 }
 
-function saveToTelegramCloud() {
-    if (!isTelegramApp || !tg.CloudStorage) {
-        return;
+// ========================================
+// Сохранение данных (ИСПРАВЛЕНО)
+// ========================================
+function saveData() {
+    // 1. Транзакции сохраняем локально на устройстве (лимит ~5MB)
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+
+    // 2. Настройки темы сохраняем и локально, и в облаке Telegram
+    localStorage.setItem('theme', currentTheme);
+    if (isTelegramApp && tg.CloudStorage) {
+        tg.CloudStorage.setItem('theme', currentTheme, (error) => {
+            if (error) console.error('Ошибка сохранения темы в Cloud:', error);
+        });
     }
-
-    tg.CloudStorage.setItem('transactions', JSON.stringify(transactions), (error) => {
-        if (error) {
-            console.error('Ошибка сохранения в Telegram Cloud:', error);
-        }
-    });
-
-    tg.CloudStorage.setItem('theme', currentTheme);
 }
 
 // ========================================
@@ -334,12 +292,11 @@ function applyTheme(theme) {
         document.documentElement.removeAttribute('data-theme');
     }
     currentTheme = theme;
-
-    // Сохраняем в соответствующее хранилище
-    if (isTelegramApp) {
-        saveToTelegramCloud();
-    } else {
-        localStorage.setItem('theme', theme);
+    saveData();
+    
+    // Обновляем цвета графика, если он уже отрисован
+    if (weeklyChart) {
+        updateWeeklyAnalytics();
     }
 }
 
@@ -357,9 +314,6 @@ function updateUI() {
     updateWeeklyAnalytics();
 }
 
-// ========================================
-// Подсчет и отображение баланса
-// ========================================
 function updateBalance() {
     const amounts = transactions.map(t => t.amount);
 
@@ -377,7 +331,7 @@ function updateBalance() {
 }
 
 // ========================================
-// Недельная аналитика
+// Недельная аналитика (ОБНОВЛЕНО ПОД CHART.JS)
 // ========================================
 function updateWeeklyAnalytics() {
     const analyticsSection = document.getElementById('analytics-section');
@@ -385,7 +339,6 @@ function updateWeeklyAnalytics() {
     const analyticsTip = document.getElementById('analytics-tip');
     const analyticsPeriod = document.getElementById('analytics-period');
 
-    // Получаем транзакции за последние 7 дней
     const today = new Date();
     const weekAgo = new Date(today);
     weekAgo.setDate(weekAgo.getDate() - 7);
@@ -395,7 +348,6 @@ function updateWeeklyAnalytics() {
         return tDate >= weekAgo && tDate <= today && t.amount < 0;
     });
 
-    // Если нет расходов за неделю — скрываем секцию
     if (weekTransactions.length === 0) {
         analyticsSection.style.display = 'none';
         return;
@@ -403,54 +355,75 @@ function updateWeeklyAnalytics() {
 
     analyticsSection.style.display = 'block';
 
-    // Период
     const formatShortDate = (d) => `${d.getDate()}.${String(d.getMonth() + 1).padStart(2, '0')}`;
     analyticsPeriod.textContent = `${formatShortDate(weekAgo)} — ${formatShortDate(today)}`;
 
-    // Группируем расходы по описанию (как категория)
     const categories = {};
     weekTransactions.forEach(t => {
         const cat = t.description || 'Другое';
-        if (!categories[cat]) {
-            categories[cat] = 0;
-        }
-        categories[cat] += Math.abs(t.amount);
+        categories[cat] = (categories[cat] || 0) + Math.abs(t.amount);
     });
 
-    // Сортируем по сумме (убывание)
     const sorted = Object.entries(categories).sort((a, b) => b[1] - a[1]);
     const totalExpense = sorted.reduce((sum, [, amount]) => sum + amount, 0);
 
-    // Цвета для полосок
-    const barColors = ['#e74c3c', '#e67e22', '#f1c40f', '#3498db', '#9b59b6', '#1abc9c'];
+    // Подготовка данных для графика
+    const labels = sorted.map(item => item[0]);
+    const data = sorted.map(item => item[1]);
+    const barColors = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#e67e22', '#1abc9c'];
 
-    // Рендерим полоски (максимум 5)
-    analyticsBars.innerHTML = '';
-    sorted.slice(0, 5).forEach(([category, amount], index) => {
-        const percent = Math.round((amount / totalExpense) * 100);
-        const color = barColors[index % barColors.length];
+    // Очищаем контейнер и создаем Canvas
+    analyticsBars.innerHTML = '<canvas id="weeklyChartCanvas"></canvas>';
+    const ctx = document.getElementById('weeklyChartCanvas').getContext('2d');
 
-        const barItem = document.createElement('div');
-        barItem.classList.add('analytics-bar-item');
-        barItem.innerHTML = `
-            <div class="analytics-bar-header">
-                <span class="analytics-bar-category">${category}</span>
-                <span class="analytics-bar-amount">${formatCurrency(amount)}</span>
-            </div>
-            <div class="analytics-bar-track">
-                <div class="analytics-bar-fill" style="background-color: ${color};" data-width="${percent}%"></div>
-            </div>
-            <span class="analytics-bar-percent">${percent}% от расходов</span>
-        `;
-        analyticsBars.appendChild(barItem);
+    if (weeklyChart) {
+        weeklyChart.destroy();
+    }
+
+    // Отрисовка кругового графика 
+    weeklyChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: barColors,
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { 
+                    position: 'bottom', 
+                    labels: { 
+                        color: currentTheme === 'dark' ? '#f5f5f5' : '#333',
+                        padding: 20,
+                        font: { family: 'Inter', size: 12 }
+                    } 
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.raw !== null) {
+                                label += formatCurrency(context.raw);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
     });
 
-    // Анимация полосок
-    requestAnimationFrame(() => {
-        document.querySelectorAll('.analytics-bar-fill').forEach(fill => {
-            fill.style.width = fill.dataset.width;
-        });
-    });
+    // Задаем высоту для графика, чтобы он не был сплющенным
+    document.getElementById('weeklyChartCanvas').parentElement.style.height = '250px';
 
     // Рекомендация
     const topCategory = sorted[0];
@@ -458,11 +431,11 @@ function updateWeeklyAnalytics() {
 
     let tip = '';
     if (topPercent >= 50) {
-        tip = `<span class="analytics-tip-icon">⚠️</span> <strong>${topCategory[0]}</strong> — это ${topPercent}% всех расходов за неделю (${formatCurrency(topCategory[1])}). Стоит обратить внимание!`;
+        tip = `<span class="analytics-tip-icon">⚠️</span> <strong>${topCategory[0]}</strong> — это ${topPercent}% расходов (${formatCurrency(topCategory[1])}). Стоит обратить внимание!`;
     } else if (topPercent >= 30) {
-        tip = `<span class="analytics-tip-icon">💡</span> Больше всего потрачено на <strong>${topCategory[0]}</strong> — ${topPercent}% расходов. Всего за неделю: ${formatCurrency(totalExpense)}`;
+        tip = `<span class="analytics-tip-icon">💡</span> Больше всего потрачено на <strong>${topCategory[0]}</strong> — ${topPercent}%. Всего за неделю: ${formatCurrency(totalExpense)}`;
     } else {
-        tip = `<span class="analytics-tip-icon">✅</span> Расходы распределены равномерно. Общая сумма за неделю: ${formatCurrency(totalExpense)}`;
+        tip = `<span class="analytics-tip-icon">✅</span> Расходы распределены равномерно. Всего за неделю: ${formatCurrency(totalExpense)}`;
     }
     analyticsTip.innerHTML = tip;
 }
@@ -481,7 +454,6 @@ function groupTransactionsByDate(transactions) {
         groups[date].push(transaction);
     });
 
-    // Сортировка дат в обратном порядке (новые сверху)
     const sortedDates = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
 
     return sortedDates.map(date => ({
@@ -490,18 +462,12 @@ function groupTransactionsByDate(transactions) {
     }));
 }
 
-// ========================================
-// Форматирование даты (всегда число и месяц)
-// ========================================
 function formatDate(dateString) {
     const date = new Date(dateString);
     const options = { day: 'numeric', month: 'long' };
     return date.toLocaleDateString('ru-RU', options);
 }
 
-// ========================================
-// Подсчет баланса для даты
-// ========================================
 function calculateDateBalance(transactions) {
     return transactions.reduce((acc, t) => acc + t.amount, 0);
 }
@@ -518,15 +484,12 @@ function updateTransactionList() {
     }
 
     const groupedTransactions = groupTransactionsByDate(transactions);
-
-    // Загружаем сохранённые свёрнутые даты
     const collapsedDates = JSON.parse(localStorage.getItem('collapsedDates') || '[]');
 
     groupedTransactions.forEach(group => {
         const dateGroup = document.createElement('div');
         dateGroup.classList.add('date-group');
 
-        // Восстанавливаем свёрнутое состояние
         if (collapsedDates.includes(group.date)) {
             dateGroup.classList.add('collapsed');
         }
@@ -542,12 +505,9 @@ function updateTransactionList() {
             <span class="date-balance">${formatCurrency(dateBalance)}</span>
         `;
 
-        // Обработчик клика для сворачивания/разворачивания
         dateHeader.addEventListener('click', () => {
             dateGroup.classList.toggle('collapsed');
-            // Сохраняем состояние
             saveCollapsedDates();
-            // Haptic feedback
             if (isTelegramApp && tg.HapticFeedback) {
                 tg.HapticFeedback.selectionChanged();
             }
@@ -555,11 +515,9 @@ function updateTransactionList() {
 
         dateGroup.appendChild(dateHeader);
 
-        // Контейнер для транзакций (сворачиваемый)
         const transactionsContainer = document.createElement('div');
         transactionsContainer.classList.add('date-transactions');
 
-        // Сортировка транзакций внутри дня (новые сверху)
         const sortedTransactions = [...group.transactions].sort((a, b) => b.id - a.id);
 
         sortedTransactions.forEach(transaction => {
@@ -586,12 +544,10 @@ function updateTransactionList() {
     });
 }
 
-// Сохранение свёрнутых дат
 function saveCollapsedDates() {
     const collapsed = [];
     document.querySelectorAll('.date-group.collapsed').forEach(group => {
         const dateText = group.querySelector('.date-text')?.textContent;
-        // Находим дату по тексту из groupedTransactions
         const allGroups = groupTransactionsByDate(transactions);
         allGroups.forEach(g => {
             if (formatDate(g.date) === dateText) {
@@ -632,34 +588,25 @@ function addTransaction(e) {
     saveData();
     updateUI();
 
-    // Очистка формы (кроме даты)
     descriptionInput.value = '';
     amountInput.value = '';
     descriptionInput.focus();
 
-    // Haptic feedback в Telegram
     if (isTelegramApp && tg.HapticFeedback) {
         tg.HapticFeedback.notificationOccurred('success');
     }
 }
 
-// ========================================
-// Удаление транзакции
-// ========================================
 function removeTransaction(id) {
     transactions = transactions.filter(t => t.id !== id);
     saveData();
     updateUI();
 
-    // Haptic feedback в Telegram
     if (isTelegramApp && tg.HapticFeedback) {
         tg.HapticFeedback.impactOccurred('light');
     }
 }
 
-// ========================================
-// Генерация уникального ID
-// ========================================
 function generateID() {
     return Date.now() + Math.random();
 }
@@ -668,7 +615,6 @@ function generateID() {
 // Форматирование валюты
 // ========================================
 function formatCurrency(amount) {
-    // Для узбекского сума используем простое форматирование (Intl не поддерживает UZS хорошо)
     if (currentCurrency.code === 'UZS') {
         const formatted = new Intl.NumberFormat('ru-RU', {
             minimumFractionDigits: 0,
@@ -691,9 +637,8 @@ function formatCurrency(amount) {
 function saveCurrency() {
     if (isTelegramApp && tg.CloudStorage) {
         tg.CloudStorage.setItem('currency', JSON.stringify(currentCurrency));
-    } else {
-        localStorage.setItem('currency', JSON.stringify(currentCurrency));
     }
+    localStorage.setItem('currency', JSON.stringify(currentCurrency));
 }
 
 function loadCurrency() {
@@ -704,8 +649,14 @@ function loadCurrency() {
                     try {
                         currentCurrency = JSON.parse(result);
                         currencyLoaded = true;
-                    } catch (e) {
-                        // Используем дефолтную валюту
+                    } catch (e) {}
+                } else {
+                    const saved = localStorage.getItem('currency');
+                    if (saved) {
+                        try {
+                            currentCurrency = JSON.parse(saved);
+                            currencyLoaded = true;
+                        } catch (e) {}
                     }
                 }
                 resolve();
@@ -716,29 +667,11 @@ function loadCurrency() {
                 try {
                     currentCurrency = JSON.parse(saved);
                     currencyLoaded = true;
-                } catch (e) {
-                    // Используем дефолтную валюту
-                }
+                } catch (e) {}
             }
             resolve();
         }
     });
-}
-
-// ========================================
-// Сохранение данных
-// ========================================
-function saveData() {
-    if (isTelegramApp) {
-        saveToTelegramCloud();
-    } else {
-        localStorage.setItem('transactions', JSON.stringify(transactions));
-    }
-}
-
-// Для обратной совместимости
-function saveToLocalStorage() {
-    saveData();
 }
 
 // ========================================
@@ -747,28 +680,19 @@ function saveToLocalStorage() {
 form.addEventListener('submit', addTransaction);
 themeToggle.addEventListener('click', toggleTheme);
 
-// Модальное окно выбора валюты
 const currencyToggle = document.getElementById('currency-toggle');
 const currencyModal = document.getElementById('currency-modal');
 const modalClose = document.getElementById('modal-close');
 const currentCurrencySymbol = document.getElementById('current-currency-symbol');
 
-if (currencyToggle) {
-    currencyToggle.addEventListener('click', openCurrencyModal);
-}
-
-if (modalClose) {
-    modalClose.addEventListener('click', closeCurrencyModal);
-}
+if (currencyToggle) currencyToggle.addEventListener('click', openCurrencyModal);
+if (modalClose) modalClose.addEventListener('click', closeCurrencyModal);
 
 if (currencyModal) {
     currencyModal.addEventListener('click', (e) => {
-        if (e.target === currencyModal) {
-            closeCurrencyModal();
-        }
+        if (e.target === currencyModal) closeCurrencyModal();
     });
 
-    // Обработчики для кнопок валют в модальном окне
     currencyModal.querySelectorAll('.modal-option').forEach(option => {
         option.addEventListener('click', () => {
             changeCurrencyFromModal(option);
@@ -779,12 +703,10 @@ if (currencyModal) {
 function openCurrencyModal() {
     if (currencyModal) {
         currencyModal.classList.remove('hidden');
-        // Небольшая задержка для анимации
         requestAnimationFrame(() => {
             currencyModal.classList.add('visible');
         });
 
-        // Haptic feedback
         if (isTelegramApp && tg.HapticFeedback) {
             tg.HapticFeedback.impactOccurred('light');
         }
@@ -801,28 +723,20 @@ function closeCurrencyModal() {
 }
 
 function changeCurrencyFromModal(option) {
-    // Получаем данные валюты
     currentCurrency = {
         code: option.dataset.currency,
         symbol: option.dataset.symbol,
         locale: option.dataset.locale
     };
 
-    // Сохраняем выбор
     saveCurrency();
-
-    // Обновляем символ в шапке
     updateCurrencySymbol();
-
-    // Обновляем UI
     updateUI();
 
-    // Haptic feedback
     if (isTelegramApp && tg.HapticFeedback) {
         tg.HapticFeedback.notificationOccurred('success');
     }
 
-    // Закрываем модальное окно
     closeCurrencyModal();
 }
 
@@ -854,13 +768,12 @@ function createRipple(event) {
     });
 }
 
-// Добавляем ripple эффект к кнопкам
 document.querySelectorAll('.btn-add, .btn-delete, .theme-toggle').forEach(button => {
     button.addEventListener('click', createRipple);
 });
 
 // ========================================
-// Анимация при скролле (IntersectionObserver)
+// Анимация при скролле
 // ========================================
 function setupScrollAnimations() {
     const observerOptions = {
@@ -877,14 +790,12 @@ function setupScrollAnimations() {
         });
     }, observerOptions);
 
-    // Наблюдаем за секциями
     document.querySelectorAll('.balance-section, .transactions-section, .add-section').forEach(section => {
         section.classList.add('scroll-animate');
         observer.observe(section);
     });
 }
 
-// Добавляем стили для scroll-анимации динамически
 const scrollAnimationStyles = document.createElement('style');
 scrollAnimationStyles.textContent = `
     .scroll-animate {
@@ -905,7 +816,6 @@ scrollAnimationStyles.textContent = `
 `;
 document.head.appendChild(scrollAnimationStyles);
 
-// Инициализация scroll анимаций после загрузки DOM
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setupScrollAnimations);
 } else {
