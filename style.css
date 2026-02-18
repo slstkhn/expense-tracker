@@ -1334,8 +1334,7 @@ input[type="date"] {
 }
 
 /* ========================================
-   Reduce motion для пользователей
-   с предпочтением отключения анимаций
+   Reduce motion
    ======================================== */
 @media (prefers-reduced-motion: reduce) {
 
@@ -1350,4 +1349,54 @@ input[type="date"] {
     html {
         scroll-behavior: auto;
     }
+}
+
+/* ========================================
+   Стили для переключателя аналитики
+   ======================================== */
+.analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.analytics-header h3 {
+    margin-bottom: 0;
+}
+
+.analytics-toggle {
+    display: flex;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    padding: 3px;
+}
+
+[data-theme="dark"] .analytics-toggle {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.analytics-btn {
+    border: none;
+    background: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    color: inherit;
+    opacity: 0.6;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.analytics-btn.active {
+    background: var(--color-card-bg);
+    opacity: 1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .analytics-btn.active {
+    background: #2c2c2e;
+    color: white;
 }
