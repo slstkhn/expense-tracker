@@ -1400,3 +1400,44 @@ input[type="date"] {
     background: #2c2c2e;
     color: white;
 }
+
+/* ========================================
+   Стили AI Сканера
+   ======================================== */
+.scanner-container {
+    margin-bottom: var(--spacing-md);
+}
+
+.btn-scan {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    color: var(--color-text);
+    border: 2px dashed var(--color-border);
+    border-radius: var(--border-radius);
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: var(--transition);
+}
+
+.btn-scan:hover {
+    border-color: #764ba2;
+    background: rgba(118, 75, 162, 0.05);
+}
+
+.scan-loader {
+    width: 100%;
+    padding: var(--spacing-sm);
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--color-muted);
+    background: var(--color-date-bg);
+    border-radius: var(--border-radius);
+    animation: pulse 1.5s infinite;
+}
