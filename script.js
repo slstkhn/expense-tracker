@@ -622,78 +622,86 @@ if (btnExpense && btnIncome) {
 }
 
 // ========================================
-// AI Сканер чеков и скриншотов
+// AI Сканер чеков и скриншотов (Исправленный)
 // ========================================
-const btnScan = document.getElementById('btn-scan');
 const fileInput = document.getElementById('receipt-upload');
 const scanLoader = document.getElementById('scan-loader');
+const btnScanLabel = document.getElementById('btn-scan-label');
 
-if (btnScan && fileInput) {
-    btnScan.addEventListener('click', () => {
-        fileInput.click();
-        if (isTelegramApp && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+// Умная функция для чтения картинки с ожиданием
+const readFileAsBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+        reader.readAsDataURL(file);
     });
+};
 
+if (fileInput) {
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        btnScan.classList.add('hidden');
-        scanLoader.classList.remove('hidden');
+        // 1. Показываем загрузку, прячем кнопку
+        if (btnScanLabel) btnScanLabel.classList.add('hidden');
+        if (scanLoader) scanLoader.classList.remove('hidden');
 
         try {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
+            // 2. Ждем, пока телефон прочитает картинку
+            const base64String = await readFileAsBase64(file);
+            const mimeType = file.type;
+
+            // 3. Отправляем картинку на наш сервер Vercel
+            const response = await fetch('/api/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageBase64: base64String, mimeType })
+            });
+
+            // Если сервер вернул ошибку (например, фото слишком большое - статус 413)
+            if (!response.ok) {
+                throw new Error(`Ошибка сервера: код ${response.status}. Возможно, скриншот слишком большого размера.`);
+            }
+
+            // 4. Получаем ответ от ИИ
+            const data = await response.json();
             
-            reader.onload = async () => {
-                const base64String = reader.result.split(',')[1];
-                const mimeType = file.type;
-
-                const response = await fetch('/api/scan', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageBase64: base64String, mimeType })
-                });
-
-                if (!response.ok) throw new Error('Ошибка сервера');
-
-                const data = await response.json();
-                
-                if (data.transactions && data.transactions.length > 0) {
-                    data.transactions.forEach(t => {
-                        transactions.push({
-                            id: generateID(),
-                            description: t.description || 'Распознано',
-                            amount: t.amount,
-                            date: t.date || new Date().toISOString().split('T')[0]
-                        });
+            if (data.transactions && data.transactions.length > 0) {
+                // Добавляем все найденные операции в список
+                data.transactions.forEach(t => {
+                    transactions.push({
+                        id: generateID(),
+                        description: t.description || 'Распознано ИИ',
+                        amount: t.amount,
+                        date: t.date || new Date().toISOString().split('T')[0]
                     });
-                    
-                    saveData();
-                    updateUI();
-                    
-                    if (isTelegramApp) {
-                        tg.showAlert(`Успешно добавлено операций: ${data.transactions.length}`);
-                        tg.HapticFeedback.notificationOccurred('success');
-                    } else {
-                        alert(`Успешно добавлено операций: ${data.transactions.length}`);
-                    }
+                });
+                
+                saveData();
+                updateUI();
+                
+                if (isTelegramApp) {
+                    tg.showAlert(`✅ Успешно добавлено операций: ${data.transactions.length}`);
+                    tg.HapticFeedback.notificationOccurred('success');
                 } else {
-                    if (isTelegramApp) tg.showAlert('Не удалось найти финансовые операции на фото');
-                    else alert('Не удалось найти финансовые операции на фото');
+                    alert(`✅ Успешно добавлено операций: ${data.transactions.length}`);
                 }
-            };
+            } else {
+                if (isTelegramApp) tg.showAlert('⚠️ ИИ не смог найти суммы расходов/доходов на этом фото');
+                else alert('⚠️ ИИ не смог найти суммы на фото');
+            }
         } catch (error) {
-            console.error(error);
-            if (isTelegramApp) tg.showAlert('Произошла ошибка при распознавании');
-            else alert('Произошла ошибка при распознавании');
+            console.error('Сбой сканера:', error);
+            // Если что-то сломалось, теперь мы точно увидим причину
+            if (isTelegramApp) tg.showAlert('❌ Ошибка: ' + error.message);
+            else alert('❌ Ошибка: ' + error.message);
         } finally {
-            btnScan.classList.remove('hidden');
-            scanLoader.classList.add('hidden');
-            fileInput.value = '';
+            // 5. В любом случае возвращаем кнопку обратно и прячем лоадер
+            if (btnScanLabel) btnScanLabel.classList.remove('hidden');
+            if (scanLoader) scanLoader.classList.add('hidden');
+            fileInput.value = ''; // Сбрасываем инпут, чтобы можно было загрузить тот же чек повторно
         }
     });
 }
-
-// Запуск
 init();
