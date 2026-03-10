@@ -58,8 +58,6 @@
         </div>
     </div>
 
-
-
     <div class="app-container hidden" id="main-app">
         <div class="container">
             <header>
@@ -149,6 +147,14 @@
 
             <div class="add-section">
                 <h3>Добавить операцию</h3>
+                
+                <div class="scanner-container">
+                    <input type="file" id="receipt-upload" accept="image/*" style="display: none;">
+                    <button class="btn-scan" id="btn-scan" type="button">
+                        <span class="scan-icon">📸</span> Распознать по фото
+                    </button>
+                    <div id="scan-loader" class="scan-loader hidden">Анализируем скриншот... ⏳</div>
+                </div>
                 <form id="transaction-form">
                     <div class="form-group">
                         <label for="description">Описание</label>
