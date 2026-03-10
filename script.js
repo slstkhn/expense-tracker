@@ -628,7 +628,6 @@ const fileInput = document.getElementById('receipt-upload');
 const scanLoader = document.getElementById('scan-loader');
 const btnScanLabel = document.getElementById('btn-scan-label');
 
-// Умная функция для чтения картинки с ожиданием
 const readFileAsBase64 = (file) => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -643,32 +642,26 @@ if (fileInput) {
         const file = e.target.files[0];
         if (!file) return;
 
-        // 1. Показываем загрузку, прячем кнопку
         if (btnScanLabel) btnScanLabel.classList.add('hidden');
         if (scanLoader) scanLoader.classList.remove('hidden');
 
         try {
-            // 2. Ждем, пока телефон прочитает картинку
             const base64String = await readFileAsBase64(file);
             const mimeType = file.type;
 
-            // 3. Отправляем картинку на наш сервер Vercel
             const response = await fetch('/api/scan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ imageBase64: base64String, mimeType })
             });
 
-            // Если сервер вернул ошибку (например, фото слишком большое - статус 413)
             if (!response.ok) {
-                throw new Error(`Ошибка сервера: код ${response.status}. Возможно, скриншот слишком большого размера.`);
+                throw new Error(`Ошибка сервера: код ${response.status}`);
             }
 
-            // 4. Получаем ответ от ИИ
             const data = await response.json();
             
             if (data.transactions && data.transactions.length > 0) {
-                // Добавляем все найденные операции в список
                 data.transactions.forEach(t => {
                     transactions.push({
                         id: generateID(),
@@ -693,15 +686,15 @@ if (fileInput) {
             }
         } catch (error) {
             console.error('Сбой сканера:', error);
-            // Если что-то сломалось, теперь мы точно увидим причину
             if (isTelegramApp) tg.showAlert('❌ Ошибка: ' + error.message);
             else alert('❌ Ошибка: ' + error.message);
         } finally {
-            // 5. В любом случае возвращаем кнопку обратно и прячем лоадер
             if (btnScanLabel) btnScanLabel.classList.remove('hidden');
             if (scanLoader) scanLoader.classList.add('hidden');
-            fileInput.value = ''; // Сбрасываем инпут, чтобы можно было загрузить тот же чек повторно
+            fileInput.value = ''; 
         }
     });
 }
+
+// Запуск
 init();
