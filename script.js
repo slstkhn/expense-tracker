@@ -14,7 +14,7 @@ let onboardingComplete = false;
 let currentCurrency = { code: 'RUB', symbol: '₽', locale: 'ru-RU' };
 let currencyLoaded = false;
 let weeklyChart = null; 
-let analyticsType = 'expense'; // 'expense' для расходов, 'income' для доходов
+let analyticsType = 'expense';
 
 // ========================================
 // Элементы DOM
@@ -218,7 +218,6 @@ function saveData() {
 function applyTheme(theme) {
     if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
     else document.documentElement.removeAttribute('data-theme');
-    
     currentTheme = theme;
     saveData();
     if (weeklyChart) updateWeeklyAnalytics();
@@ -245,9 +244,6 @@ function updateBalance() {
     expenseEl.textContent = formatCurrency(Math.abs(expense));
 }
 
-// ========================================
-// Недельная аналитика (ОБНОВЛЕНО)
-// ========================================
 function updateWeeklyAnalytics() {
     const analyticsSection = document.getElementById('analytics-section');
     const analyticsBars = document.getElementById('analytics-bars');
@@ -258,7 +254,6 @@ function updateWeeklyAnalytics() {
     const weekAgo = new Date(today);
     weekAgo.setDate(weekAgo.getDate() - 7);
 
-    // Берем все операции за неделю
     const allWeekTransactions = transactions.filter(t => {
         const tDate = new Date(t.date);
         return tDate >= weekAgo && tDate <= today;
@@ -272,12 +267,10 @@ function updateWeeklyAnalytics() {
     analyticsSection.style.display = 'block';
     analyticsPeriod.textContent = `${formatDate(weekAgo)} — ${formatDate(today)}`;
 
-    // Фильтруем: показываем доходы или расходы в зависимости от переключателя
     const filteredTransactions = allWeekTransactions.filter(t => {
         return analyticsType === 'expense' ? t.amount < 0 : t.amount > 0;
     });
 
-    // Если в выбранной категории пусто
     if (filteredTransactions.length === 0) {
         analyticsBars.innerHTML = `<div style="text-align: center; padding: 30px 10px; color: var(--color-muted);">Нет ${analyticsType === 'expense' ? 'расходов' : 'доходов'} за эту неделю</div>`;
         analyticsTip.innerHTML = '';
@@ -300,7 +293,6 @@ function updateWeeklyAnalytics() {
     const labels = sorted.map(item => item[0]);
     const data = sorted.map(item => item[1]);
     
-    // Красная палитра для расходов, зеленая/синяя для доходов
     const expenseColors = ['#e74c3c', '#e67e22', '#f1c40f', '#3498db', '#9b59b6', '#1abc9c'];
     const incomeColors = ['#2ecc71', '#27ae60', '#1abc9c', '#16a085', '#3498db', '#2980b9'];
     const barColors = analyticsType === 'expense' ? expenseColors : incomeColors;
@@ -308,29 +300,19 @@ function updateWeeklyAnalytics() {
     analyticsBars.innerHTML = '<canvas id="weeklyChartCanvas"></canvas>';
     const ctx = document.getElementById('weeklyChartCanvas').getContext('2d');
 
-    if (weeklyChart) {
-        weeklyChart.destroy();
-    }
+    if (weeklyChart) weeklyChart.destroy();
 
     weeklyChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: barColors,
-                borderWidth: 0,
-                hoverOffset: 4
-            }]
+            datasets: [{ data: data, backgroundColor: barColors, borderWidth: 0, hoverOffset: 4 }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { 
-                    position: 'bottom', 
-                    labels: { color: currentTheme === 'dark' ? '#f5f5f5' : '#333', padding: 20, font: { family: 'Inter', size: 12 } } 
-                },
+                legend: { position: 'bottom', labels: { color: currentTheme === 'dark' ? '#f5f5f5' : '#333', padding: 20, font: { family: 'Inter', size: 12 } } },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
@@ -618,7 +600,6 @@ if (document.readyState === 'loading') {
     setupScrollAnimations();
 }
 
-// Обработчики кнопок "Расходы / Доходы"
 const btnExpense = document.getElementById('btn-expense');
 const btnIncome = document.getElementById('btn-income');
 
@@ -637,6 +618,80 @@ if (btnExpense && btnIncome) {
         btnExpense.classList.remove('active');
         updateWeeklyAnalytics();
         if (isTelegramApp && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+    });
+}
+
+// ========================================
+// AI Сканер чеков и скриншотов
+// ========================================
+const btnScan = document.getElementById('btn-scan');
+const fileInput = document.getElementById('receipt-upload');
+const scanLoader = document.getElementById('scan-loader');
+
+if (btnScan && fileInput) {
+    btnScan.addEventListener('click', () => {
+        fileInput.click();
+        if (isTelegramApp && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    });
+
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        btnScan.classList.add('hidden');
+        scanLoader.classList.remove('hidden');
+
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            
+            reader.onload = async () => {
+                const base64String = reader.result.split(',')[1];
+                const mimeType = file.type;
+
+                const response = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageBase64: base64String, mimeType })
+                });
+
+                if (!response.ok) throw new Error('Ошибка сервера');
+
+                const data = await response.json();
+                
+                if (data.transactions && data.transactions.length > 0) {
+                    data.transactions.forEach(t => {
+                        transactions.push({
+                            id: generateID(),
+                            description: t.description || 'Распознано',
+                            amount: t.amount,
+                            date: t.date || new Date().toISOString().split('T')[0]
+                        });
+                    });
+                    
+                    saveData();
+                    updateUI();
+                    
+                    if (isTelegramApp) {
+                        tg.showAlert(`Успешно добавлено операций: ${data.transactions.length}`);
+                        tg.HapticFeedback.notificationOccurred('success');
+                    } else {
+                        alert(`Успешно добавлено операций: ${data.transactions.length}`);
+                    }
+                } else {
+                    if (isTelegramApp) tg.showAlert('Не удалось найти финансовые операции на фото');
+                    else alert('Не удалось найти финансовые операции на фото');
+                }
+            };
+        } catch (error) {
+            console.error(error);
+            if (isTelegramApp) tg.showAlert('Произошла ошибка при распознавании');
+            else alert('Произошла ошибка при распознавании');
+        } finally {
+            btnScan.classList.remove('hidden');
+            scanLoader.classList.add('hidden');
+            fileInput.value = '';
+        }
     });
 }
 
