@@ -149,10 +149,14 @@
                 <h3>Добавить операцию</h3>
                 
                 <div class="scanner-container">
-                    <input type="file" id="receipt-upload" accept="image/*" style="display: none;">
-                    <button class="btn-scan" id="btn-scan" type="button">
-                        <span class="scan-icon">📸</span> Распознать по фото
-                    </button>
+                    <div class="btn-scan" id="btn-scan-label" style="position: relative; overflow: hidden;">
+                        <input type="file" id="receipt-upload" accept="image/*" 
+                               style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
+                        
+                        <span style="position: relative; z-index: 1; pointer-events: none;">
+                            <span class="scan-icon">📸</span> Распознать по фото
+                        </span>
+                    </div>
                     <div id="scan-loader" class="scan-loader hidden">Анализируем скриншот... ⏳</div>
                 </div>
                 <form id="transaction-form">
